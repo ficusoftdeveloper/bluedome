@@ -1,0 +1,35 @@
+in the same folder of the script must be the file outpun_bin.png
+output of crack_detection.py
+
+ modify the last line of the script crack_detection.py with
+cv2.imwrite('output_bin.png',bw_result*255)
+
+
+
+python crack_measure.py
+
+with this command the results are in pixels
+
+or 
+
+python crack_measure.py 10
+
+where 10 is the length of a pixel in cm or mm
+to have the results in cm or mm
+
+the script writes 3 files as output
+
+measures.png
+measures.csv
+measures_sum.csv
+
+in measures.csv there are the measures for each oblect that you
+see in measures.png
+
+then if two pieces are near the are considered the same crack, ID_CRACK in measures.csv
+and in measures_sum.csv there are the sum of all the pieces of the full cracks
+
+
+
+
+
