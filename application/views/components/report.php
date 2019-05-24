@@ -8,10 +8,10 @@
                 <div style="height: 160px;width: 100%;">
                   <?php if ($report_file['is_image']): ?>
                     <a href="<?php echo base_url('uploads/raw/'.$report_file['filename']); ?>">
-                    <img src="<?php echo base_url('uploads/raw/'.$report_file['filename']); ?>" class="img-responsive" style="height: 185px;width: 100%;">
+                    <img src="<?php echo base_url('uploads/raw/'.$report_file['filename']); ?>" class="img-responsive" style="height: 160px;width: 100%;">
                     </a>
                   <?php else: ?>
-                    <video height="185px" width="100%" controls>
+                    <video height="160px" width="100%" controls>
                       <source src="<?php echo base_url('uploads/raw/'.$report_file['rawname']); ?>" type="video/mp4">
                       <source src="<?php echo base_url('uploads/raw/'.$report_file['rawname']); ?>" type="video/ogg">
                       Your browser does not support HTML5 video.
@@ -19,10 +19,11 @@
                   <?php endif; ?>
                 </div>
             </div>
+            <?php if ($report_file['operation'] != 'detect_and_locate_objects'): ?>
             <div class="col-md-3" style="padding-left: 8px;padding-right: 1px;">
                 <div class="image-container" style="height: 160px;width: 100%;">
                     <a href="<?php echo base_url('uploads/processed/detect/'.$report_file['processed_filename']); ?>">
-                    <img id="binImg<?php echo $report_file['fid'] ?>" src="<?php echo base_url('uploads/processed/detect/'.$report_file['processed_filename']); ?>" modal-src="<?php echo base_url('uploads/processed/measure/'.$report_file['measout_filename']); ?>" class="img-responsive" alt="<?php echo $report_file['filename'] ?>" style="height: 185px;width: 100%;">
+                    <img id="binImg<?php echo $report_file['fid'] ?>" src="<?php echo base_url('uploads/processed/detect/'.$report_file['processed_filename']); ?>" modal-src="<?php echo base_url('uploads/processed/measure/'.$report_file['measout_filename']); ?>" class="img-responsive" alt="<?php echo $report_file['filename'] ?>" style="height: 160px;width: 100%;">
                     </a>
                     <div class="middle">
                       <!-- Button to Open the Modal -->
@@ -33,6 +34,26 @@
                     </div>
                 </div>
             </div>
+          <?php else: ?>
+            <div class="col-md-3" style="padding-left: 8px;padding-right: 1px;">
+                <div class="image-container" style="height: 160px;width: 100%;">
+                    <a href="<?php echo base_url('uploads/raw/'.$report_file['rawname']); ?>">
+                      <video height="160px" width="100%" controls>
+                        <source src="<?php echo base_url('uploads/raw/'.$report_file['rawname']); ?>" type="video/avi">
+                        <source src="<?php echo base_url('uploads/raw/'.$report_file['rawname']); ?>" type="video/ogg">
+                        Your browser does not support HTML5 video.
+                      </video>
+                    </a>
+                    <div class="middle">
+                      <!-- Button to Open the Modal -->
+                      <button type="button" class="btn btn-primary" data-target="#binModal<?php echo $report_file['fid'] ?>" data-fid="<?php echo $report_file['fid'] ?>" onclick="loadBinary(this)">
+                        SHOW BINARY
+                      </button>
+                      <!-- End of Button display -->
+                    </div>
+                </div>
+            </div>
+          <?php endif; ?>
             <!-- Modal to display binary image. -->
             <div id="binModal<?php echo $report_file['fid'] ?>" class="report-modal">
               <span class="report-close" onclick="closeModal(this)">&times;</span>
@@ -45,7 +66,7 @@
                     <div class="col-md-10">
                         <div class="row">
                             <div class="col-md-3">
-                                <input type="radio" id="cat<?php echo $report_file['fid'] ?>" name="radio-group<?php echo $report_file['fid'] ?>" checked><label for="test<?php echo $report_file['fid'] ?>">Crack</label>
+                                <input type="radio" id="cat<?php echo $report_file['fid'] ?>" name="radio-group<?php echo $report_file['fid'] ?>" checked><label for="test<?php echo $report_file['fid'] ?>"><?php if ($report_file['operation'] == 'detect_and_locate_objects'): ?>Show Objects<?php else: ?>Crack <?php endif; ?></label>
                             </div>
                             <div class="col-md-3">
                               <?php if ($report_file['operation'] == 'detect_and_locate_objects'): ?>
@@ -53,16 +74,21 @@
                               <?php endif; ?>
                             </div>
                             <div class="col-md-3"></div>
+                            <?php if ($report_file['operation'] != 'detect_and_locate_objects'): ?>
                             <div class="col-md-3">
                                 <p><b>Unit: </b> <?php echo $report_file['props']['unit_poo'] ?></p>
                             </div>
+                          <?php endif; ?>
                         </div>
                     </div>
+                    <?php if ($report_file['operation'] != 'detect_and_locate_objects'): ?>
                     <div class="col-md-2">
                       <p><a href="<?php echo site_url('media/download/' . $report_file['fid']); ?>"><i class="fa fa-download" title="Download Reports" style="font-size:24px;color:red;padding-left:20px;"></a></i></p>
                     </div>
+                    <?php endif; ?>
                 </div>
 
+                <?php if ($report_file['operation'] != 'detect_and_locate_objects'): ?>
                 <div class="row" style="padding-left: 40px;">
                   <div class="col-md-2"></div>
                   <div class="col-md-10">
@@ -79,6 +105,7 @@
                     </div>
                   </div>
                 </div>
+              <?php endif; ?>
 
 
                 <?php if (!empty($report_file['csv_sum_data'])): ?>

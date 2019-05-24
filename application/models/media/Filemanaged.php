@@ -144,9 +144,20 @@ class FileManaged extends CI_Model {
         return false;
     }
 
-    public function getMapMarkers($fid) {
-        $this->db->order_by('id', 'DESC');
-        $query = $this->db->get_where('file_map_point', array('fid' => $fid));
-        return $query->result_array();
+    public function getMapMarkers($fid = "") {
+        $rows = [];
+        if(!empty($fid)) {
+            $this->db->order_by('fid', 'DESC');
+            $query = $this->db->get_where('file_map_point', array('fid' => $fid));
+            if ($query) {
+                $rows  = $query->result_array();
+            }
+        } else {
+            $this->db->order_by('fid', 'DESC');
+            $query = $this->db->get_where('file_map_point', ['type' => 'sign_board']);
+            $rows = $query->result_array();
+        }
+
+        return $rows;
     }
 }

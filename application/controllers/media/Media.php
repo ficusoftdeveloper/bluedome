@@ -273,6 +273,19 @@ class Media extends CI_Controller {
           // check operation.
           if ($file['operation'] == 'detect_and_locate_objects') {
             $this->processObject($file);
+            $update = [
+              'filename' => $inputs['filename'][$fid] . $fileextension,
+              'is_processed' => 1, // File is processed.
+              'processed_filename' => '',
+              'measout_filename' => '',
+              'csv_filename' => '',
+              'csv_sum_filename' => '',
+              'date_processed' => date('m/d/Y'),
+              'status' => 1
+            ];
+
+            $update = $this->filemanaged->update($update, $fid);
+            return;
           }
 
           $sourceFile = realpath($this->rawSourceUploadPath . $file['filename']);
@@ -427,7 +440,7 @@ class Media extends CI_Controller {
     $dom = new DOMDocument("1.0");
     $node = $dom->createElement("markers");
     $parnode = $dom->appendChild($node);
-    $results = $this->filemanaged->getMapMarkers($fid);
+    $results = $this->filemanaged->getMapMarkers();
     $filepath = 'uploads/object/raw/output.xml';
 
     if (!empty($results)) {
