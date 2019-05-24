@@ -1,5 +1,6 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
+require __DIR__ . '/../../../vendor/autoload.php';
 
 /**
  * Controls all media related actions.
@@ -35,6 +36,7 @@ class Media extends CI_Controller {
     $this->load->library('upload');
     $this->load->library('session');
     $this->load->library('csvreader');
+    $this->load->library('googledriveservices');
     $this->load->helper(array('form', 'url'));
     $this->load->helper('media/media');
     $this->load->helper('welcome');
@@ -106,7 +108,31 @@ class Media extends CI_Controller {
           // Insert file properties.
           $insertProps = $this->filemanaged->insertFileProps($file_props);
 
-          $this->session->set_flashdata('success_msg', 'File successfully uploaded.');
+          // Upload to google drive.
+          // Get the API client and construct the service object.
+          $client = $this->googledriveservices->getClient();
+          $service = new Google_Service_Drive($client);
+          // Id of folder where files are uploaded.
+          //$folderId = '1kZ_jQMDREVz5GD8RcJEfhtGBrQHBhaCx';
+          $folderId = '1Erf9JuzVDzt2-9Xp48-JBD1NiSAJRVR0';
+          $fileMetadata = new Google_Service_Drive_DriveFile([
+            'name' => $insert . '_' . time() . '_' . $postData['filename'],
+            'parents' => [$folderId]
+          ]);
+
+          $content = file_get_contents($this->rawSourceUploadPath . $postData['filename']);
+          /*$file = $service->files->create($fileMetadata, [
+            'data' => $content,
+            'mimeType' => $postData['filetype'],
+            'uploadType' => 'multipart',
+            'fields' => 'id'
+          ]); */
+          $file->id = TRUE;
+          if ($file->id) {
+            $this->session->set_flashdata('success_msg', 'File successfully uploaded.');
+          } else {
+            $this->session->set_flashdata('error_msg', 'Unexpected error occurred, please try again.');
+          }
         } else {
           $this->session->set_flashdata('error_msg', 'Unexpected error occurred, please try again.');
         }
