@@ -35,7 +35,17 @@
             <td><?php echo $processed_file['filesize'] . ' KB' ?></td>
             <td>1</td>
             <td><?php echo $processed_file['filetype'] ?></td>
-            <td style="color: cornflowerblue;">Processed</td>
+            <?php if ($processed_file['is_processed'] == 1) {
+              $processed_file_status = 'Processed';
+              $style_color = 'cornflowerblue';
+            } else if ($processed_file['is_processed'] == 2) {
+              $processed_file_status = 'Processing';
+              $style_color = 'orange';
+            } else {
+              $processed_file_status = 'Processed';
+              $style_color = 'cornflowerblue';
+            } ?>
+            <td style="color: <?php echo $style_color; ?>;"><?php echo $processed_file_status; ?></td>
             <td>
             <input class="styled-checkbox" id="styled-checkbox-<?php echo $processed_file['fid'] ?>" name="file_check[<?php echo $processed_file['fid'] ?>]" type="checkbox" value="<?php echo $processed_file['fid'] ?>"> <label for="styled-checkbox-<?php echo $processed_file['fid'] ?>"></label>
             </td>

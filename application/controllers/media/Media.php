@@ -158,8 +158,10 @@ class Media extends CI_Controller {
         $this->save($inputs);
       }
       if (isset($inputs['processFiles'])) {
-        $this->save($inputs);
-        $this->process($inputs);
+        $code = $this->save($inputs);
+        if ($code != 2) {
+          $this->process($inputs);
+        }
       }
       if (isset($inputs['reprocessFiles'])) {
         $this->process($inputs, TRUE);
@@ -213,15 +215,18 @@ class Media extends CI_Controller {
           ];
 
           $file_props = [
-            'distance_cfo' => $inputs['distance_cfo'][$fid],
-            'unit_cfo' => $inputs['unit_cfo'][$fid],
-            'is_image_visual' => ($inputs['distance_cfo'][$fid]) ? 1 : 0,
+            'distance_cfo' => isset($inputs['distance_cfo'][$fid]) ? $inputs['distance_cfo'][$fid] : 0,
+            'unit_cfo' => isset($inputs['unit_cfo'][$fid]) ? $inputs['unit_cfo'][$fid] : 0,
+            'is_image_visual' => (isset($inputs['distance_cfo'][$fid]) && $inputs['distance_cfo'][$fid]) ? 1 : 0,
             'date_modified' => date('m/d/Y')
           ];
           if ($error_code = validate_media($file_props)) {
             switch ($error_code) {
               case 2:
-                $this->session->set_flashdata('error_msg', 'Invalid distance of camera from object.');
+                if ($file['operation'] != 'detect_and_locate_objects') {
+                  $this->session->set_flashdata('error_msg', 'Invalid distance of camera from object.');
+                  return $error_code;
+                }
                 break;
 
               default:
@@ -244,6 +249,8 @@ class Media extends CI_Controller {
     } else {
       $this->session->set_flashdata('error_msg', 'Unexpected error occurred, please try again.');
     }
+
+    return;
   }
 
   /**
@@ -272,10 +279,9 @@ class Media extends CI_Controller {
         if (!empty($file)) {
           // check operation.
           if ($file['operation'] == 'detect_and_locate_objects') {
-            $this->processObject($file);
             $update = [
               'filename' => $inputs['filename'][$fid] . $fileextension,
-              'is_processed' => 1, // File is processed.
+              'is_processed' => 2, // 2 -> Processing.
               'processed_filename' => '',
               'measout_filename' => '',
               'csv_filename' => '',
@@ -285,7 +291,8 @@ class Media extends CI_Controller {
             ];
 
             $update = $this->filemanaged->update($update, $fid);
-            return;
+            $this->processObject($file);
+            continue;
           }
 
           $sourceFile = realpath($this->rawSourceUploadPath . $file['filename']);
@@ -351,7 +358,7 @@ class Media extends CI_Controller {
           $update = $this->filemanaged->update($update, $fid);
         }
       }
-      $this->session->set_flashdata('success_msg', 'Files successfully processed.');
+      $this->session->set_flashdata('success_msg', 'Files sent for processing.');
     } else {
       $this->session->set_flashdata('error_msg', 'Please select atleast 1 file.');
     }
@@ -406,30 +413,42 @@ class Media extends CI_Controller {
    *  Return
    */
   public function processObject(array $file) {
-    // Process algorithm to get input.csv
-    // read input.csv file, and rearrage $data as per class id.
-    // read track_point.csv and collect lat long value.
-    // plotonmap($data);
-    $input_csv_path = 'uploads/object/raw/input.csv';
-    $inputs = $this->csvreader->parse_file($input_csv_path);
-    $results = [];
+    // Download output zip file and extract to local directory.
+    // Parse output.csv file and parse object lat, long.
+    // Write new entries to database.
 
-    if (!empty($inputs)) {
-      foreach ($inputs as $input) {
-        $results[$input['classID']] = $input;
+    // Upload to google drive.
+    // Get the API client and construct the service object.
+    /*$client = $this->googledriveservices->getClient();
+    $service = new Google_Service_Drive($client);
+    $pageToken = null;
+    do {
+      $response = $service->files->listFiles([
+        //'q' => 'name=OUTPUT_detection',
+        'spaces' => 'drive',
+      //  'pageToken' => $pageToken,
+      //  'fields' => 'nextPageToken, files(id, name)',
+      ]);
+      foreach ($response->files as $file) {
+
+        if ($file->id == '11uyh_ZGnnIBCXyfkmjjwAlwlLv_8SgxD') {
+          $download = $service->files->get('11uyh_ZGnnIBCXyfkmjjwAlwlLv_8SgxD', array(
+    'alt' => 'media'));
+    $content = $download->getBody()->getContents();
+          echo '<PRE>';
+          print_r($content); exit;
+
+            //  echo '<PRE>';
+          //    print_r($content); exit;
+          printf("Found file: %s (%s)\n", $file->name, $file->id);
+        }
+
       }
-    }
-    // $results
-    $results = [
-      '10' => [
-        'classID' => '10',
-        'classLabel' => 'E5-1a EXIT WITH NUMBER Marker',
-        'timestamps' => [
-          '35' => [13242, 25336],
-          '66' => [2.64646353, -4.6685757]
-        ]
-      ]
-    ];
+
+      $pageToken = $response->pageToken;
+    } while ($pageToken != NULL);
+
+    exit; */
   }
 
   /**

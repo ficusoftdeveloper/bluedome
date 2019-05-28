@@ -9,7 +9,6 @@
         <div style="padding-top: 10%;padding-left: 4%;">
           <div class="input-group">
             <span><select required class="form-control dist_prop" name="operation">
-              <option value="">--Select Operation--</option>
               <option value="detect_and_measure_cracks">Detect and Measure Cracks</option>
               <option value="detect_and_locate_objects">Detect and Locate Objects</option></select></span>
           </div>

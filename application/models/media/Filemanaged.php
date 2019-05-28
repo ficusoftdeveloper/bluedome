@@ -23,13 +23,15 @@ class FileManaged extends CI_Model {
         $rows = [];
         if(!empty($id)) {
             $this->db->order_by('fid', 'DESC');
-            $query = $this->db->get_where('file_managed', array('fid' => $id, 'is_processed' => 1));
+            $query = $this->db->where_in('is_processed', [1, 2]);
+            $query = $this->db->get_where('file_managed', array('fid' => $id,));
             if ($query) {
                 $rows  = $query->row_array();
             }
         } else {
             $this->db->order_by('fid', 'DESC');
-            $query = $this->db->get_where('file_managed', ['is_processed' => 1]);
+            $query = $this->db->where_in('is_processed', [1, 2]);
+            $query = $this->db->get('file_managed');
             $rows = $query->result_array();
         }
 
@@ -40,13 +42,13 @@ class FileManaged extends CI_Model {
         $rows = [];
         if(!empty($id)) {
             $this->db->order_by('fid', 'DESC');
-            $query = $this->db->get_where('file_managed', array('fid' => $id, 'status' => 1));
+            $query = $this->db->get_where('file_managed', array('fid' => $id, 'status' => 1, 'is_processed' => 1));
             if ($query) {
                 $rows  = $query->row_array();
             }
         } else {
             $this->db->order_by('fid', 'DESC');
-            $query = $this->db->get_where('file_managed', ['status' => 1]);
+            $query = $this->db->get_where('file_managed', ['status' => 1, 'is_processed' => 1]);
             $rows = $query->result_array();
         }
 

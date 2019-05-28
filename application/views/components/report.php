@@ -133,12 +133,13 @@
             </div>
         </div>
         <?php endforeach; ?>
+        <!--
         <div class="row">
             <div class="col-md-12 text-center" style="padding-top: 20px;">
                 <input type="submit" name="disableFiles" value="Delete" class="submit" style="background: #454545;padding-bottom: 5px;text-transform: uppercase;">
                 <input type="submit" value="EXPORT" class="submit" style="background: #dd5847;padding-bottom: 5px;text-transform: capitalize;">
             </div>
-        </div>
+        </div> -->
     </div>
     <?php echo '</form>'; ?>
 </div>
