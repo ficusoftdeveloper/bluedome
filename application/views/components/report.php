@@ -46,9 +46,9 @@
                     </a>
                     <div class="middle">
                       <!-- Button to Open the Modal -->
-                      <button type="button" class="btn btn-primary" data-target="#binModal<?php echo $report_file['fid'] ?>" data-fid="<?php echo $report_file['fid'] ?>" onclick="loadBinary(this)">
+                      <!-- <button type="button" class="btn btn-primary" data-target="#binModal<?php echo $report_file['fid'] ?>" data-fid="<?php echo $report_file['fid'] ?>" onclick="loadBinary(this)">
                         SHOW BINARY
-                      </button>
+                      </button> -->
                       <!-- End of Button display -->
                     </div>
                 </div>

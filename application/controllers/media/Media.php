@@ -279,6 +279,7 @@ class Media extends CI_Controller {
         if (!empty($file)) {
           // check operation.
           if ($file['operation'] == 'detect_and_locate_objects') {
+            $fileextension = parse_file_type($file['filetype']);
             $update = [
               'filename' => $inputs['filename'][$fid] . $fileextension,
               'is_processed' => 2, // 2 -> Processing.
@@ -419,36 +420,73 @@ class Media extends CI_Controller {
 
     // Upload to google drive.
     // Get the API client and construct the service object.
-    /*$client = $this->googledriveservices->getClient();
+    $client = $this->googledriveservices->getClient();
     $service = new Google_Service_Drive($client);
     $pageToken = null;
+
     do {
       $response = $service->files->listFiles([
         //'q' => 'name=OUTPUT_detection',
-        'spaces' => 'drive',
-      //  'pageToken' => $pageToken,
-      //  'fields' => 'nextPageToken, files(id, name)',
+        //'spaces' => 'drive',
+        //'pageToken' => $pageToken,
+        //'fields' => 'nextPageToken, files(id, name)',
       ]);
       foreach ($response->files as $file) {
+        if ($file->id) {
+          $download = $service->files->get($file->id, ['alt' => 'media']);
+          $content = $download->getBody()->getContents();
+          // Code to save content in file to output.
+          $output_path = "uploads/object/processed" . $file['filename'];
+          //file_put_contents($output_path, $content);
 
-        if ($file->id == '11uyh_ZGnnIBCXyfkmjjwAlwlLv_8SgxD') {
-          $download = $service->files->get('11uyh_ZGnnIBCXyfkmjjwAlwlLv_8SgxD', array(
-    'alt' => 'media'));
-    $content = $download->getBody()->getContents();
-          echo '<PRE>';
-          print_r($content); exit;
+          // Update file manage table.
+          $update = [
+            'is_processed' => 1,
+          ];
 
-            //  echo '<PRE>';
-          //    print_r($content); exit;
-          printf("Found file: %s (%s)\n", $file->name, $file->id);
+          $updated = $this->filemanaged->update($update, $file['fid']);
+
         }
-
       }
 
       $pageToken = $response->pageToken;
     } while ($pageToken != NULL);
 
-    exit; */
+    // Update file manage table.
+    $update = [
+      'is_processed' => 1,
+    ];
+
+    $updated = $this->filemanaged->update($update, $file['fid']);
+
+    // Step 02 - Parse output csv file and update db table.
+    $csv_path = "uploads/object/processed/1.csv";
+    $results = $this->csvreader->parse_file($csv_path);
+    if (!empty($results)) {
+      foreach ($results as $result) {
+        $check = $this->filemanaged->checkMapMarker('45', $result['classID'], $result['classLABEL'], round($result['GPS_LON'], 7), round($result['GPS_LAT'], 7));
+        if (!$check) {
+          // set address.
+          $address = base_url('uploads/object/raw/maps/1.png');
+          if ($result['classID'] == 1) {
+            $address = base_url('uploads/object/raw/maps/1.png');
+          } else if ($result['classID'] == 2) {
+            $address = base_url('uploads/object/raw/maps/2.jpeg');
+          }
+          $mapMarker = [
+            'fid' => $file['fid'],
+            'class_id' => $result['classID'],
+            'class_label' => $result['classLABEL'],
+            'address' => $address,
+            'lng' => round($result['GPS_LAT'],7),
+            'lat' => round($result['GPS_LON'],7),
+            'type' => 'sign_board',
+          ];
+
+          $insert = $this->filemanaged->setMapMarker($mapMarker);
+        }
+      }
+    }
   }
 
   /**

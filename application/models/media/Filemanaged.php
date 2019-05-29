@@ -162,4 +162,35 @@ class FileManaged extends CI_Model {
 
         return $rows;
     }
+
+    public function setMapMarker($data = []) {
+      $insert = $this->db->insert('file_map_point', $data);
+      if ($insert) {
+        return $this->db->insert_id();
+      } else {
+        return FALSE;
+      }
+    }
+
+    public function checkMapMarker($fid, $classID, $classLabel, $gps_lat, $gps_lon) {
+      if (!empty($fid) && !empty($classID) && !empty($classLabel) && !empty($gps_lat) && !empty($gps_lon)) {
+        $query = $this->db->get_where('file_map_point', [
+          'fid' => $fid,
+          'class_id' => $classID,
+          'class_label' => $classLabel,
+          'lat' => $gps_lat,
+          'lng' => $gps_lon
+        ]);
+
+        if ($query) {
+          $rows = $query->result_array();
+          //print_r($gps_lon); exit;
+          if (!empty($rows)) {
+            return TRUE;
+          }
+        }
+      }
+
+      return FALSE;
+    }
 }
