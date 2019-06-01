@@ -108,38 +108,38 @@ class Media extends CI_Controller {
           // Insert file properties.
           $insertProps = $this->filemanaged->insertFileProps($file_props);
 
-          // Upload to google drive.
-          // Get the API client and construct the service object.
+          // Selected file uploaded to google drive folder.
           $client = $this->googledriveservices->getClient();
           $service = new Google_Service_Drive($client);
-          // Id of folder where files are uploaded.
-          //$folderId = '1kZ_jQMDREVz5GD8RcJEfhtGBrQHBhaCx';
-          $folderId = '1Erf9JuzVDzt2-9Xp48-JBD1NiSAJRVR0';
-          $fileMetadata = new Google_Service_Drive_DriveFile([
+
+          // File id of parent folder.
+          $folder_id = '1CUjrrgfH0Ryfg3ZoTgWgccSNilibRlxI';
+          $file_meta_data = new Google_Service_Drive_DriveFile([
             'name' => $insert . '_' . time() . '_' . $postData['filename'],
-            'parents' => [$folderId]
+            'parents' => [$folder_id]
           ]);
 
           $content = file_get_contents($this->rawSourceUploadPath . $postData['filename']);
-          /*$file = $service->files->create($fileMetadata, [
+          $file = $service->files->create($file_meta_data, [
             'data' => $content,
             'mimeType' => $postData['filetype'],
             'uploadType' => 'multipart',
             'fields' => 'id'
-          ]); */
-          $file->id = TRUE;
-          if ($file->id) {
+          ]);
+
+          // File ID of uploaded file in google drive.
+          $gfile_id = $file->getId();
+
+          if ($gfile_id) {
             $this->session->set_flashdata('success_msg', 'File successfully uploaded.');
           } else {
             $this->session->set_flashdata('error_msg', 'Unexpected error occurred, please try again.');
           }
-        } else {
-          $this->session->set_flashdata('error_msg', 'Unexpected error occurred, please try again.');
         }
+      } else {
+        $error = array('error' => $this->upload->display_errors());
+        $this->session->set_flashdata('error_msg', $error['error']);
       }
-    } else {
-      $error = array('error' => $this->upload->display_errors());
-      $this->session->set_flashdata('error_msg', $error['error']);
     }
 
     redirect('/inspection');
@@ -423,21 +423,22 @@ class Media extends CI_Controller {
     $client = $this->googledriveservices->getClient();
     $service = new Google_Service_Drive($client);
     $pageToken = null;
-
+    $name = "output_VIRB_0011.zip";
     do {
       $response = $service->files->listFiles([
-        //'q' => 'name=OUTPUT_detection',
-        //'spaces' => 'drive',
-        //'pageToken' => $pageToken,
-        //'fields' => 'nextPageToken, files(id, name)',
+        'q' => 'name="' . $name . '"',
+        'spaces' => 'drive',
+        'pageToken' => $pageToken,
+        'fields' => 'nextPageToken, files(id, name)',
       ]);
-      foreach ($response->files as $file) {
-        if ($file->id) {
-          $download = $service->files->get($file->id, ['alt' => 'media']);
+      foreach ($response->files as $drive_file) {
+        if ($drive_file->getId()) {
+          $download = $service->files->get($drive_file->getId(), ['alt' => 'media']);
           $content = $download->getBody()->getContents();
           // Code to save content in file to output.
-          $output_path = "uploads/object/processed" . $file['filename'];
-          //file_put_contents($output_path, $content);
+          $output_path = "uploads/object/processed/" . $drive_file->getName();
+          //print_r($output_path); exit;
+          file_put_contents($output_path, $content);
 
           // Update file manage table.
           $update = [

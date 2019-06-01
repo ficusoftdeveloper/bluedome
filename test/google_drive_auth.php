@@ -1,5 +1,5 @@
 <?php
-require __DIR__ . '/vendor/autoload.php';
+require __DIR__ . '/../vendor/autoload.php';
 
 if (php_sapi_name() != 'cli') {
     throw new Exception('This application must be run on the command line.');
@@ -13,7 +13,7 @@ function getClient() {
   $client = new Google_Client();
   $client->setApplicationName('Google Drive API PHP Quickstart');
   $client->setScopes(Google_Service_Drive::DRIVE);
-  $client->setAuthConfig('credentials.json');
+  $client->setAuthConfig(__DIR__ . '/../application/libraries/auth_keys/google_credentials.json');
   $client->setAccessType('offline');
   $client->setPrompt('select_account consent');
 
@@ -21,7 +21,7 @@ function getClient() {
   // The file token.json stores the user's access and refresh tokens, and is
   // created automatically when the authorization flow completes for the first
   // time.
-  $tokenPath = 'token.json';
+  $tokenPath = __DIR__ . '/../application/libraries/auth_keys/google_access_token.json';
   if (file_exists($tokenPath)) {
       $accessToken = json_decode(file_get_contents($tokenPath), true);
       $client->setAccessToken($accessToken);
@@ -67,6 +67,7 @@ $service = new Google_Service_Drive($client);
 // Print the names and IDs for up to 10 files.
 $optParams = array(
   //'pageSize' => 10,
+  //'q' => 'name="OUTPUT_detection"',
   //'fields' => 'nextPageToken, files(id, name)'
 );
 $results = $service->files->listFiles($optParams);
