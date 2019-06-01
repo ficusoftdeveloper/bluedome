@@ -114,6 +114,7 @@ class Media extends CI_Controller {
 
           // File id of parent folder.
           $folder_id = '1CUjrrgfH0Ryfg3ZoTgWgccSNilibRlxI';
+          $name = $insert . '_' . time() . '_' . $postData['filename'];
           $file_meta_data = new Google_Service_Drive_DriveFile([
             'name' => $insert . '_' . time() . '_' . $postData['filename'],
             'parents' => [$folder_id]
@@ -131,6 +132,10 @@ class Media extends CI_Controller {
           $gfile_id = $file->getId();
 
           if ($gfile_id) {
+            $update = [
+              'gdrive_filename' => $name,
+            ];
+            $this->filemanaged->update($update, $insert);
             $this->session->set_flashdata('success_msg', 'File successfully uploaded.');
           } else {
             $this->session->set_flashdata('error_msg', 'Unexpected error occurred, please try again.');
@@ -414,16 +419,11 @@ class Media extends CI_Controller {
    *  Return
    */
   public function processObject(array $file) {
-    // Download output zip file and extract to local directory.
-    // Parse output.csv file and parse object lat, long.
-    // Write new entries to database.
-
-    // Upload to google drive.
-    // Get the API client and construct the service object.
+    // Download processed files from google drive.
     $client = $this->googledriveservices->getClient();
     $service = new Google_Service_Drive($client);
     $pageToken = null;
-    $name = "output_VIRB_0011.zip";
+    $name = $file['gdrive_filename'];
     do {
       $response = $service->files->listFiles([
         'q' => 'name="' . $name . '"',
