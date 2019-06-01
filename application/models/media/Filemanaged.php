@@ -23,13 +23,15 @@ class FileManaged extends CI_Model {
         $rows = [];
         if(!empty($id)) {
             $this->db->order_by('fid', 'DESC');
-            $query = $this->db->get_where('file_managed', array('fid' => $id, 'is_processed' => 1));
+            $query = $this->db->where_in('is_processed', [1, 2]);
+            $query = $this->db->get_where('file_managed', array('fid' => $id,));
             if ($query) {
                 $rows  = $query->row_array();
             }
         } else {
             $this->db->order_by('fid', 'DESC');
-            $query = $this->db->get_where('file_managed', ['is_processed' => 1]);
+            $query = $this->db->where_in('is_processed', [1, 2]);
+            $query = $this->db->get('file_managed');
             $rows = $query->result_array();
         }
 
@@ -40,13 +42,13 @@ class FileManaged extends CI_Model {
         $rows = [];
         if(!empty($id)) {
             $this->db->order_by('fid', 'DESC');
-            $query = $this->db->get_where('file_managed', array('fid' => $id, 'status' => 1));
+            $query = $this->db->get_where('file_managed', array('fid' => $id, 'status' => 1, 'is_processed' => 1));
             if ($query) {
                 $rows  = $query->row_array();
             }
         } else {
             $this->db->order_by('fid', 'DESC');
-            $query = $this->db->get_where('file_managed', ['status' => 1]);
+            $query = $this->db->get_where('file_managed', ['status' => 1, 'is_processed' => 1]);
             $rows = $query->result_array();
         }
 
@@ -144,9 +146,51 @@ class FileManaged extends CI_Model {
         return false;
     }
 
-    public function getMapMarkers($fid) {
-        $this->db->order_by('id', 'DESC');
-        $query = $this->db->get_where('file_map_point', array('fid' => $fid));
-        return $query->result_array();
+    public function getMapMarkers($fid = "") {
+        $rows = [];
+        if(!empty($fid)) {
+            $this->db->order_by('fid', 'DESC');
+            $query = $this->db->get_where('file_map_point', array('fid' => $fid));
+            if ($query) {
+                $rows  = $query->result_array();
+            }
+        } else {
+            $this->db->order_by('fid', 'DESC');
+            $query = $this->db->get_where('file_map_point', ['type' => 'sign_board']);
+            $rows = $query->result_array();
+        }
+
+        return $rows;
+    }
+
+    public function setMapMarker($data = []) {
+      $insert = $this->db->insert('file_map_point', $data);
+      if ($insert) {
+        return $this->db->insert_id();
+      } else {
+        return FALSE;
+      }
+    }
+
+    public function checkMapMarker($fid, $classID, $classLabel, $gps_lat, $gps_lon) {
+      if (!empty($fid) && !empty($classID) && !empty($classLabel) && !empty($gps_lat) && !empty($gps_lon)) {
+        $query = $this->db->get_where('file_map_point', [
+          'fid' => $fid,
+          'class_id' => $classID,
+          'class_label' => $classLabel,
+          'lat' => $gps_lat,
+          'lng' => $gps_lon
+        ]);
+
+        if ($query) {
+          $rows = $query->result_array();
+          //print_r($gps_lon); exit;
+          if (!empty($rows)) {
+            return TRUE;
+          }
+        }
+      }
+
+      return FALSE;
     }
 }

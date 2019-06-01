@@ -9,7 +9,6 @@
         <div style="padding-top: 10%;padding-left: 4%;">
           <div class="input-group">
             <span><select required class="form-control dist_prop" name="operation">
-              <option value="">--Select Operation--</option>
               <option value="detect_and_measure_cracks">Detect and Measure Cracks</option>
               <option value="detect_and_locate_objects">Detect and Locate Objects</option></select></span>
           </div>
@@ -59,6 +58,7 @@
               Your browser does not support HTML5 video.
             </video>
           <?php endif; ?>
+          <?php if ($file['operation'] != 'detect_and_locate_objects') : ?>
           <div class="middle">
             <!-- Button to Open the Modal -->
             <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#myModal<?php echo $file['fid'] ?>" data-fid="<?php echo $file['fid'] ?>" onclick="loadCanvas(this)">
@@ -69,6 +69,7 @@
               <?php endif; ?>
             </button>
           </div>
+        <?php endif; ?>
         </div>
       </div>
       <div class="col-md-4" style="background: #f6f6f6;padding-left: 0;">
@@ -77,6 +78,7 @@
             <input disabled required id="image-<?php echo $file['fid'] ?>" type="text" class="form-control" name="filename[<?php echo $file['fid'] ?>]" placeholder="Enter File Name" value="<?php echo preg_replace('/\\.[^.\\s]{3,4}$/', '', $file['filename']); ?>">
             <span class="input-group-addon"><i class="fas fa-paperclip"></i></span>
           </div>
+          <?php if ($file['operation'] != 'detect_and_locate_objects'): ?>
           <div class="row dist_inform">
             <div class="col-md-12 col-lg-6 col-xs-12">
               <p class="report_p">Distance of camera from Object</p>
@@ -92,6 +94,7 @@
                 <option value="mm" <?php if(isset($file['unit_cfo']) && ($file['unit_cfo'] == 'mm')) { echo 'selected'; } ?>>mm</option></select></span>
             </div>
           </div>
+          <?php endif; ?>
           <?php if ($file['is_calibrated']): ?>
           <div class="row dist_inform" id="dim-block-<?php echo $file['fid'] ?>" <?php if(isset($file['is_image_dim']) && ($file['is_image_dim'] == 0)) { ?> style="display: none;" <?php } else { ?> style="margin-top:-15px;" <?php } ?>>
             <div class="col-md-12 col-lg-6 col-xs-12">
@@ -115,8 +118,8 @@
         <div class="row" style="padding-left: 10px;padding-top: 10px;">
             <div class="col-md-8">
                 <div class="row">
-                    <div class="col-md-3">
-                        <input type="radio" id="cat<?php echo $file['fid'] ?>" name="radio-group-<?php echo $file['fid'] ?>" checked><label for="test1">Crack</label>
+                    <div class="col-md-12">
+                        <input type="radio" id="cat<?php echo $file['fid'] ?>" name="radio-group-<?php echo $file['fid'] ?>" checked><label for="test1"><?php if ($file['operation'] == 'detect_and_locate_objects'): ?>Detect and Local objects <?php else: ?> Crack <?php endif; ?></label>
                     </div>
                 </div>
             </div>
@@ -126,12 +129,12 @@
         </div>
         <?php if ($file['is_calibrated']): ?>
         <div class="row dist_inform" id="dim-block-<?php echo $file['fid'] ?>" <?php if(isset($file['is_image_dim']) && ($file['is_image_dim'] == 0)) { ?> style="display: none;" <?php } ?>>
-            <div class="col-md-16 col-lg-12 col-xs-12">
+            <!--<div class="col-md-16 col-lg-12 col-xs-12">
               <p class="report_p">Distance between point on Object (In pixels) = <b><?php echo $file['pixels']?></b></p>
-            </div>
+            </div> -->
           </div>
            <?php endif; ?>
-          <div class="row dist_inform" id="dim-block">
+          <!--<div class="row dist_inform" id="dim-block">
             <div class="col-md-16 col-lg-12 col-xs-12">
               <?php if ($file['operation'] == 'detect_and_locate_objects'): ?>
                 <?php $operation = 'Detect and locate objects'; ?>
@@ -140,7 +143,7 @@
               <?php endif; ?>
               <p class="report_p">Selected Operation = <b><?php echo $operation ?></b></p>
             </div>
-          </div>
+          </div> -->
       </div>
     </div>
   <?php endforeach; ?>

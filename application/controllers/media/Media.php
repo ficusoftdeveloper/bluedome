@@ -1,5 +1,6 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
+require __DIR__ . '/../../../vendor/autoload.php';
 
 /**
  * Controls all media related actions.
@@ -35,6 +36,7 @@ class Media extends CI_Controller {
     $this->load->library('upload');
     $this->load->library('session');
     $this->load->library('csvreader');
+    $this->load->library('googledriveservices');
     $this->load->helper(array('form', 'url'));
     $this->load->helper('media/media');
     $this->load->helper('welcome');
@@ -106,14 +108,43 @@ class Media extends CI_Controller {
           // Insert file properties.
           $insertProps = $this->filemanaged->insertFileProps($file_props);
 
-          $this->session->set_flashdata('success_msg', 'File successfully uploaded.');
-        } else {
-          $this->session->set_flashdata('error_msg', 'Unexpected error occurred, please try again.');
+          // Selected file uploaded to google drive folder.
+          $client = $this->googledriveservices->getClient();
+          $service = new Google_Service_Drive($client);
+
+          // File id of parent folder.
+          $folder_id = '1CUjrrgfH0Ryfg3ZoTgWgccSNilibRlxI';
+          $name = $insert . '_' . time() . '_' . $postData['filename'];
+          $file_meta_data = new Google_Service_Drive_DriveFile([
+            'name' => $insert . '_' . time() . '_' . $postData['filename'],
+            'parents' => [$folder_id]
+          ]);
+
+          $content = file_get_contents($this->rawSourceUploadPath . $postData['filename']);
+          $file = $service->files->create($file_meta_data, [
+            'data' => $content,
+            'mimeType' => $postData['filetype'],
+            'uploadType' => 'multipart',
+            'fields' => 'id'
+          ]);
+
+          // File ID of uploaded file in google drive.
+          $gfile_id = $file->getId();
+
+          if ($gfile_id) {
+            $update = [
+              'gdrive_filename' => $name,
+            ];
+            $this->filemanaged->update($update, $insert);
+            $this->session->set_flashdata('success_msg', 'File successfully uploaded.');
+          } else {
+            $this->session->set_flashdata('error_msg', 'Unexpected error occurred, please try again.');
+          }
         }
+      } else {
+        $error = array('error' => $this->upload->display_errors());
+        $this->session->set_flashdata('error_msg', $error['error']);
       }
-    } else {
-      $error = array('error' => $this->upload->display_errors());
-      $this->session->set_flashdata('error_msg', $error['error']);
     }
 
     redirect('/inspection');
@@ -132,8 +163,10 @@ class Media extends CI_Controller {
         $this->save($inputs);
       }
       if (isset($inputs['processFiles'])) {
-        $this->save($inputs);
-        $this->process($inputs);
+        $code = $this->save($inputs);
+        if ($code != 2) {
+          $this->process($inputs);
+        }
       }
       if (isset($inputs['reprocessFiles'])) {
         $this->process($inputs, TRUE);
@@ -187,15 +220,18 @@ class Media extends CI_Controller {
           ];
 
           $file_props = [
-            'distance_cfo' => $inputs['distance_cfo'][$fid],
-            'unit_cfo' => $inputs['unit_cfo'][$fid],
-            'is_image_visual' => ($inputs['distance_cfo'][$fid]) ? 1 : 0,
+            'distance_cfo' => isset($inputs['distance_cfo'][$fid]) ? $inputs['distance_cfo'][$fid] : 0,
+            'unit_cfo' => isset($inputs['unit_cfo'][$fid]) ? $inputs['unit_cfo'][$fid] : 0,
+            'is_image_visual' => (isset($inputs['distance_cfo'][$fid]) && $inputs['distance_cfo'][$fid]) ? 1 : 0,
             'date_modified' => date('m/d/Y')
           ];
           if ($error_code = validate_media($file_props)) {
             switch ($error_code) {
               case 2:
-                $this->session->set_flashdata('error_msg', 'Invalid distance of camera from object.');
+                if ($file['operation'] != 'detect_and_locate_objects') {
+                  $this->session->set_flashdata('error_msg', 'Invalid distance of camera from object.');
+                  return $error_code;
+                }
                 break;
 
               default:
@@ -218,6 +254,8 @@ class Media extends CI_Controller {
     } else {
       $this->session->set_flashdata('error_msg', 'Unexpected error occurred, please try again.');
     }
+
+    return;
   }
 
   /**
@@ -246,7 +284,21 @@ class Media extends CI_Controller {
         if (!empty($file)) {
           // check operation.
           if ($file['operation'] == 'detect_and_locate_objects') {
+            $fileextension = parse_file_type($file['filetype']);
+            $update = [
+              'filename' => $inputs['filename'][$fid] . $fileextension,
+              'is_processed' => 2, // 2 -> Processing.
+              'processed_filename' => '',
+              'measout_filename' => '',
+              'csv_filename' => '',
+              'csv_sum_filename' => '',
+              'date_processed' => date('m/d/Y'),
+              'status' => 1
+            ];
+
+            $update = $this->filemanaged->update($update, $fid);
             $this->processObject($file);
+            continue;
           }
 
           $sourceFile = realpath($this->rawSourceUploadPath . $file['filename']);
@@ -312,7 +364,7 @@ class Media extends CI_Controller {
           $update = $this->filemanaged->update($update, $fid);
         }
       }
-      $this->session->set_flashdata('success_msg', 'Files successfully processed.');
+      $this->session->set_flashdata('success_msg', 'Files sent for processing.');
     } else {
       $this->session->set_flashdata('error_msg', 'Please select atleast 1 file.');
     }
@@ -367,30 +419,75 @@ class Media extends CI_Controller {
    *  Return
    */
   public function processObject(array $file) {
-    // Process algorithm to get input.csv
-    // read input.csv file, and rearrage $data as per class id.
-    // read track_point.csv and collect lat long value.
-    // plotonmap($data);
-    $input_csv_path = 'uploads/object/raw/input.csv';
-    $inputs = $this->csvreader->parse_file($input_csv_path);
-    $results = [];
+    // Download processed files from google drive.
+    $client = $this->googledriveservices->getClient();
+    $service = new Google_Service_Drive($client);
+    $pageToken = null;
+    $name = $file['gdrive_filename'];
+    do {
+      $response = $service->files->listFiles([
+        'q' => 'name="' . $name . '"',
+        'spaces' => 'drive',
+        'pageToken' => $pageToken,
+        'fields' => 'nextPageToken, files(id, name)',
+      ]);
+      foreach ($response->files as $drive_file) {
+        if ($drive_file->getId()) {
+          $download = $service->files->get($drive_file->getId(), ['alt' => 'media']);
+          $content = $download->getBody()->getContents();
+          // Code to save content in file to output.
+          $output_path = "uploads/object/processed/" . $drive_file->getName();
+          //print_r($output_path); exit;
+          file_put_contents($output_path, $content);
 
-    if (!empty($inputs)) {
-      foreach ($inputs as $input) {
-        $results[$input['classID']] = $input;
+          // Update file manage table.
+          $update = [
+            'is_processed' => 1,
+          ];
+
+          $updated = $this->filemanaged->update($update, $file['fid']);
+
+        }
+      }
+
+      $pageToken = $response->pageToken;
+    } while ($pageToken != NULL);
+
+    // Update file manage table.
+    $update = [
+      'is_processed' => 1,
+    ];
+
+    $updated = $this->filemanaged->update($update, $file['fid']);
+
+    // Step 02 - Parse output csv file and update db table.
+    $csv_path = "uploads/object/processed/1.csv";
+    $results = $this->csvreader->parse_file($csv_path);
+    if (!empty($results)) {
+      foreach ($results as $result) {
+        $check = $this->filemanaged->checkMapMarker('45', $result['classID'], $result['classLABEL'], round($result['GPS_LON'], 7), round($result['GPS_LAT'], 7));
+        if (!$check) {
+          // set address.
+          $address = base_url('uploads/object/raw/maps/1.png');
+          if ($result['classID'] == 1) {
+            $address = base_url('uploads/object/raw/maps/1.png');
+          } else if ($result['classID'] == 2) {
+            $address = base_url('uploads/object/raw/maps/2.jpeg');
+          }
+          $mapMarker = [
+            'fid' => $file['fid'],
+            'class_id' => $result['classID'],
+            'class_label' => $result['classLABEL'],
+            'address' => $address,
+            'lng' => round($result['GPS_LAT'],7),
+            'lat' => round($result['GPS_LON'],7),
+            'type' => 'sign_board',
+          ];
+
+          $insert = $this->filemanaged->setMapMarker($mapMarker);
+        }
       }
     }
-    // $results
-    $results = [
-      '10' => [
-        'classID' => '10',
-        'classLabel' => 'E5-1a EXIT WITH NUMBER Marker',
-        'timestamps' => [
-          '35' => [13242, 25336],
-          '66' => [2.64646353, -4.6685757]
-        ]
-      ]
-    ];
   }
 
   /**
@@ -401,7 +498,7 @@ class Media extends CI_Controller {
     $dom = new DOMDocument("1.0");
     $node = $dom->createElement("markers");
     $parnode = $dom->appendChild($node);
-    $results = $this->filemanaged->getMapMarkers($fid);
+    $results = $this->filemanaged->getMapMarkers();
     $filepath = 'uploads/object/raw/output.xml';
 
     if (!empty($results)) {

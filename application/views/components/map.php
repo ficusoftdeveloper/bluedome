@@ -8,8 +8,8 @@ var customLabel = {
 
 function initMap() {
   var map = new google.maps.Map(document.getElementById('map'), {
-    center: new google.maps.LatLng(37.253918, -121.948494),
-    zoom: 15
+    center: new google.maps.LatLng(37.246944, -121.815552),
+    zoom: 18
   });
 
   var infoWindow = new google.maps.InfoWindow;
@@ -41,8 +41,20 @@ function initMap() {
           position: point,
           label: icon.label
         });
+
+        var contentString = '<div id="content">'+
+            '<div id="siteNotice">'+
+            '</div>'+
+            '<h3 id="firstHeading" class="firstHeading">'+name+'</h3>'+
+            '<div id="bodyContent">'+
+            '<img src="'+address+'" height="50" width="50"</img> '+
+            ''+
+            '</div>'+
+            '</div>';
+
+
         marker.addListener('click', function() {
-          infoWindow.setContent(infowincontent);
+          infoWindow.setContent(contentString);
           infoWindow.open(map, marker);
         });
       });
