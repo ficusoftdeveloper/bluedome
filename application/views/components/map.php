@@ -13,8 +13,10 @@ function initMap() {
   });
 
   var infoWindow = new google.maps.InfoWindow;
+  var filepath = "<?php echo  $filepath ?>";
+  
   // Change this depending on the name of your PHP or XML file
-  downloadUrl('http://localhost/bd/uploads/object/raw/output.xml', function(data) {
+  downloadUrl(filepath, function(data) {
     var xml = data.responseXML;
     var markers = xml.documentElement.getElementsByTagName('marker');
     Array.prototype.forEach.call(markers, function(markerElem) {

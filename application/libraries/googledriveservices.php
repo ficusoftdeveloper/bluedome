@@ -1,5 +1,5 @@
 <?php if (!defined('BASEPATH')) exit('No direct script access allowed');
-require $_SERVER["DOCUMENT_ROOT"] . '/bd/vendor/autoload.php';
+require $_SERVER["DOCUMENT_ROOT"] . '/bluedome/vendor/autoload.php';
 
 /**
  * CSV Reader class.

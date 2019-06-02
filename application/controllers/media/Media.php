@@ -37,6 +37,7 @@ class Media extends CI_Controller {
     $this->load->library('session');
     $this->load->library('csvreader');
     $this->load->library('googledriveservices');
+    $this->load->library('unzip');
     $this->load->helper(array('form', 'url'));
     $this->load->helper('media/media');
     $this->load->helper('welcome');
@@ -133,7 +134,7 @@ class Media extends CI_Controller {
 
           if ($gfile_id) {
             $update = [
-              'gdrive_filename' => $name,
+              'gdrive_filename' => preg_replace('/\\.[^.\\s]{3,4}$/', '', $name),
             ];
             $this->filemanaged->update($update, $insert);
             $this->session->set_flashdata('success_msg', 'File successfully uploaded.');
@@ -426,7 +427,7 @@ class Media extends CI_Controller {
     $name = $file['gdrive_filename'];
     do {
       $response = $service->files->listFiles([
-        'q' => 'name="' . $name . '"',
+        'q' => 'name="' . $name . '.zip"',
         'spaces' => 'drive',
         'pageToken' => $pageToken,
         'fields' => 'nextPageToken, files(id, name)',
@@ -436,36 +437,26 @@ class Media extends CI_Controller {
           $download = $service->files->get($drive_file->getId(), ['alt' => 'media']);
           $content = $download->getBody()->getContents();
           // Code to save content in file to output.
-          $output_path = "uploads/object/processed/" . $drive_file->getName();
+          $output_path = "uploads/processed/object/" . $drive_file->getName();
           //print_r($output_path); exit;
           file_put_contents($output_path, $content);
 
-          // Update file manage table.
-          $update = [
-            'is_processed' => 1,
-          ];
-
-          $updated = $this->filemanaged->update($update, $file['fid']);
-
+          // extract zip file.
+          if (file_exists($output_path)) {
+            $this->unzip->extract($output_path);
+          }
         }
       }
 
       $pageToken = $response->pageToken;
     } while ($pageToken != NULL);
 
-    // Update file manage table.
-    $update = [
-      'is_processed' => 1,
-    ];
-
-    $updated = $this->filemanaged->update($update, $file['fid']);
-
     // Step 02 - Parse output csv file and update db table.
-    $csv_path = "uploads/object/processed/1.csv";
+    $csv_path = "uploads/processed/object/" . $file['gdrive_filename'] . "/" . $file['gdrive_filename'] . ".csv";
     $results = $this->csvreader->parse_file($csv_path);
     if (!empty($results)) {
       foreach ($results as $result) {
-        $check = $this->filemanaged->checkMapMarker('45', $result['classID'], $result['classLABEL'], round($result['GPS_LON'], 7), round($result['GPS_LAT'], 7));
+        $check = $this->filemanaged->checkMapMarker($file['fid'], $result['classID'], $result['classLABEL'], round($result['GPS_LON'], 7), round($result['GPS_LAT'], 7));
         if (!$check) {
           // set address.
           $address = base_url('uploads/object/raw/maps/1.png');
@@ -488,6 +479,13 @@ class Media extends CI_Controller {
         }
       }
     }
+
+    // Update file manage table.
+    $update = [
+      'is_processed' => 1,
+    ];
+
+    $updated = $this->filemanaged->update($update, $file['fid']);
   }
 
   /**
@@ -498,8 +496,8 @@ class Media extends CI_Controller {
     $dom = new DOMDocument("1.0");
     $node = $dom->createElement("markers");
     $parnode = $dom->appendChild($node);
-    $results = $this->filemanaged->getMapMarkers();
-    $filepath = 'uploads/object/raw/output.xml';
+    $results = $this->filemanaged->getMapMarkers($fid);
+    $filepath = 'uploads/processed/object/maps/' . $fid . '.xml';
 
     if (!empty($results)) {
       foreach ($results as $result) {
@@ -517,9 +515,11 @@ class Media extends CI_Controller {
       $dom->save($filepath);
     }
 
+    $data['filepath'] = base_url($filepath);
+
     // Manage views components.
 		$this->load->view('components/inspection_header', header_component());
-		$this->load->view('components/map');
+		$this->load->view('components/map', $data);
 		$this->load->view('components/inspection_footer');
 
   }
