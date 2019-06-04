@@ -13,7 +13,7 @@ function getClient() {
   $client = new Google_Client();
   $client->setApplicationName('Google Drive API PHP Quickstart');
   $client->setScopes(Google_Service_Drive::DRIVE);
-  $client->setAuthConfig(__DIR__ . '/../application/libraries/auth_keys/google_credentials.json');
+  $client->setAuthConfig(__DIR__ . '/../application/libraries/auth_keys/google_credentials_stag.json');
   $client->setAccessType('offline');
   $client->setPrompt('select_account consent');
 
@@ -21,7 +21,7 @@ function getClient() {
   // The file token.json stores the user's access and refresh tokens, and is
   // created automatically when the authorization flow completes for the first
   // time.
-  $tokenPath = __DIR__ . '/../application/libraries/auth_keys/google_access_token.json';
+  $tokenPath = __DIR__ . '/../application/libraries/auth_keys/google_access_token_stag.json';
   if (file_exists($tokenPath)) {
       $accessToken = json_decode(file_get_contents($tokenPath), true);
       $client->setAccessToken($accessToken);
