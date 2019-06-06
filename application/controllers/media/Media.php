@@ -55,10 +55,10 @@ class Media extends CI_Controller {
     $config = [];
     if (!empty($input)) {
       $config['upload_path'] = $this->rawSourceUploadPath;
-      $config['allowed_types'] = 'gif|jpg|png|jpeg|mp4';
+      $config['allowed_types'] = 'gif|jpg|png|jpeg|mp4|avi|MP4';
       $config['overwrite'] = FALSE;
       if (isset($input['videoSubmit'])) {
-        $config['allowed_types'] = 'mp4';
+        $config['allowed_types'] = 'mp4|MP4';
       }
     }
 
@@ -79,7 +79,7 @@ class Media extends CI_Controller {
         $postData = [
           'operation' => $inputs['operation'],
           'filename' => $fdata['upload_data']['file_name'],
-          'rawname' => $fdata['upload_data']['file_name'],
+          'rawname' => $fdata['upload_data']['orig_name'],
           'filetype' => $fdata['upload_data']['file_type'],
           'filesize' => $fdata['upload_data']['file_size'],
           'is_image' => $fdata['upload_data']['is_image'],
@@ -125,6 +125,22 @@ class Media extends CI_Controller {
           $file = $service->files->create($file_meta_data, [
             'data' => $content,
             'mimeType' => $postData['filetype'],
+            'uploadType' => 'multipart',
+            'fields' => 'id'
+          ]);
+
+          // Upload GPX file.
+          $gpx_file_path = $this->rawSourceUploadPath . 'gpx/' . preg_replace('/\\.[^.\\s]{3,4}$/', '', $postData['rawname']) . '.gpx';
+          $gpx_file_meta_data = new Google_Service_Drive_DriveFile([
+            'name' => $insert . '_' . time() . '_' . preg_replace('/\\.[^.\\s]{3,4}$/', '', $postData['rawname']) . '.gpx',
+            'parents' => [$folder_id]
+          ]);
+
+          $content = file_get_contents($gpx_file_path);
+          //print_r($content); exit;
+          $gpx_file = $service->files->create($gpx_file_meta_data, [
+            'data' => $content,
+            'mimeType' => 'text/gpx',
             'uploadType' => 'multipart',
             'fields' => 'id'
           ]);
