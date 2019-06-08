@@ -522,7 +522,7 @@ class Media extends CI_Controller {
         $newnode->setAttribute("id", $result['id']);
         $newnode->setAttribute("class_id", $result['class_id']);
         $newnode->setAttribute("class_label", $result['class_label']);
-        $newnode->setAttribute("address", $result['address']);
+        $newnode->setAttribute("address", base_url($result['address']));
         $newnode->setAttribute("lat", $result['lat']);
         $newnode->setAttribute("lng", $result['lng']);
         $newnode->setAttribute("type", $result['type']);
