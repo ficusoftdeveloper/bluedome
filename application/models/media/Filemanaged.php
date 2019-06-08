@@ -193,4 +193,21 @@ class FileManaged extends CI_Model {
 
       return FALSE;
     }
+
+    public function getMasterClass($class_id = "") {
+        $rows = [];
+        if(!empty($class_id)) {
+            $this->db->order_by('class_id', 'DESC');
+            $query = $this->db->get_where('master_class', array('class_id' => $class_id));
+            if ($query) {
+                $rows  = $query->row_array();
+            }
+        } else {
+            $this->db->order_by('class_id', 'DESC');
+            $query = $this->db->get_where('master_class', ['status' => 1]);
+            $rows = $query->result_array();
+        }
+
+        return $rows;
+    }
 }

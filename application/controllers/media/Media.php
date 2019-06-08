@@ -474,13 +474,10 @@ class Media extends CI_Controller {
       foreach ($results as $result) {
         $check = $this->filemanaged->checkMapMarker($file['fid'], $result['classID'], $result['classLABEL'], round($result['GPS_LON'], 7), round($result['GPS_LAT'], 7));
         if (!$check) {
-          // set address.
-          $address = base_url('uploads/object/raw/maps/1.png');
-          if ($result['classID'] == 1) {
-            $address = base_url('uploads/object/raw/maps/1.png');
-          } else if ($result['classID'] == 2) {
-            $address = base_url('uploads/object/raw/maps/2.jpeg');
-          }
+          // set map icon.
+          $master_class = $this->filemanaged->getMasterClass($result['classID']);
+
+          $address = $master_class['icon'];
           $mapMarker = [
             'fid' => $file['fid'],
             'class_id' => $result['classID'],
