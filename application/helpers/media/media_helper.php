@@ -117,3 +117,45 @@ if (!function_exists('validate_media')) {
       return 1;
     }
 }
+
+
+/**
+ * De duplication of object mapping.
+ * @var array
+ */
+if (!function_exists('deduplication')) {
+  /**
+   * Deduplication class labels.
+   *
+   * @param  array  $results
+   *  Result array.
+   *
+   * @return array
+   *  Result array.
+   */
+  function deduplication(array $results) {
+    $final = [];
+    if (!empty($results)) {
+      for ($i = 1; $i <= count($results); $i++) {
+        if ($i < count($results)) {
+          $current = $results[$i];
+          $j = $i + 1;
+          $next = $results[$j];
+          // Level 01 - Check if class id is same.
+          if ($current['classID'] == $next['classID']) {
+            // Level 02 - Check if lat long value is different.
+            if (($current['GPS_LAT'] != $next['GPS_LAT']) || ($current['GPS_LON'] != $next['GPS_LON'])) {
+              $final[] = $current;
+            }
+          } else { // Class ID is different.
+            $final[] = $current;
+          }
+        } else {
+          $final[] = $results[$i];
+        }
+      }
+    }
+
+    return $final;
+  }
+}

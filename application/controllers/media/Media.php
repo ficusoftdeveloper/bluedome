@@ -470,6 +470,7 @@ class Media extends CI_Controller {
     // Step 02 - Parse output csv file and update db table.
     $csv_path = "uploads/processed/object/" . $file['gdrive_filename'] . "/" . $file['gdrive_filename'] . ".csv";
     $results = $this->csvreader->parse_file($csv_path);
+    $results = deduplication($results);
     if (!empty($results)) {
       foreach ($results as $result) {
         $check = $this->filemanaged->checkMapMarker($file['fid'], $result['classID'], $result['classLABEL'], round($result['GPS_LON'], 7), round($result['GPS_LAT'], 7));
